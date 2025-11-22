@@ -445,40 +445,76 @@
 
         function updateGuessedRow(rowIndex) {
             const guess = guesses[rowIndex];
+            const result = Array(5).fill('absent');
+            const targetLetters = targetWord.split('');
+            const guessLetters = guess.split('');
 
+            // First pass: mark correct positions (green)
+            for (let i = 0; i < 5; i++) {
+                if (guessLetters[i] === targetLetters[i]) {
+                    result[i] = 'correct';
+                    targetLetters[i] = null; // Mark as used
+                    guessLetters[i] = null;   // Mark as used
+                }
+            }
+
+            // Second pass: mark present letters (yellow)
+            for (let i = 0; i < 5; i++) {
+                if (guessLetters[i] !== null) {
+                    const letterIndex = targetLetters.indexOf(guessLetters[i]);
+                    if (letterIndex !== -1) {
+                        result[i] = 'present';
+                        targetLetters[letterIndex] = null; // Mark as used
+                    }
+                }
+            }
+
+            // Apply the results to tiles
             for (let i = 0; i < 5; i++) {
                 const tile = document.getElementById(`tile-${rowIndex}-${i}`);
-                const letter = guess[i];
-
-                tile.textContent = letter;
+                tile.textContent = guess[i];
                 tile.className = 'tile';
-
-                if (targetWord[i] === letter) {
-                    tile.classList.add('correct');
-                } else if (targetWord.includes(letter)) {
-                    tile.classList.add('present');
-                } else {
-                    tile.classList.add('absent');
-                }
+                tile.classList.add(result[i]);
             }
         }
 
         function updateLetterStates() {
             const guess = guesses[guesses.length - 1];
+            const targetLetters = targetWord.split('');
+            const guessLetters = guess.split('');
+            const result = Array(5).fill('absent');
 
+            // First pass: mark correct positions
+            for (let i = 0; i < 5; i++) {
+                if (guessLetters[i] === targetLetters[i]) {
+                    result[i] = 'correct';
+                    targetLetters[i] = null;
+                    guessLetters[i] = null;
+                }
+            }
+
+            // Second pass: mark present letters
+            for (let i = 0; i < 5; i++) {
+                if (guessLetters[i] !== null) {
+                    const letterIndex = targetLetters.indexOf(guessLetters[i]);
+                    if (letterIndex !== -1) {
+                        result[i] = 'present';
+                        targetLetters[letterIndex] = null;
+                    }
+                }
+            }
+
+            // Update keyboard state (best state wins: correct > present > absent)
             for (let i = 0; i < guess.length; i++) {
                 const letter = guess[i];
-
-                if (targetWord[i] === letter) {
+                const currentState = letterStates[letter];
+                
+                if (result[i] === 'correct') {
                     letterStates[letter] = 'correct';
-                } else if (targetWord.includes(letter)) {
-                    if (letterStates[letter] !== 'correct') {
-                        letterStates[letter] = 'present';
-                    }
-                } else {
-                    if (!letterStates[letter]) {
-                        letterStates[letter] = 'absent';
-                    }
+                } else if (result[i] === 'present' && currentState !== 'correct') {
+                    letterStates[letter] = 'present';
+                } else if (!currentState) {
+                    letterStates[letter] = result[i];
                 }
             }
         }
